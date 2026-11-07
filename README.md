@@ -1,239 +1,61 @@
-# 🧬 DNABERT-Style Transformer From Scratch (PyTorch)
+# DNA Transformer from scratch
 
-A from-scratch educational implementation of a **DNABERT-style Transformer** for DNA sequence modeling using **PyTorch**.
+A PyTorch masked-language-modeling experiment for DNA, with a train-only BPE tokenizer, custom attention with ALiBi-style distance bias, and explicit genomic-region evaluation.
 
-The primary goal of this project is **to understand how DNA foundation models work internally**, rather than simply using pretrained models from Hugging Face.
+[![checks](https://github.com/Almizan-khan/-DNABERT-Style-Transformer-From-Scratch/actions/workflows/checks.yml/badge.svg)](https://github.com/Almizan-khan/-DNABERT-Style-Transformer-From-Scratch/actions/workflows/checks.yml)
 
-This project implements the complete pipeline required to train a BERT-style model on genomic sequences, including tokenization, embeddings, Transformer encoder blocks, Masked Language Modeling (MLM), and the training loop.
 
----
+## Engineering focus
 
-# 🎯 Project Goal
+- Custom embeddings, multi-head self-attention, encoder blocks and masked-token prediction head.
+- FASTA parsing, ambiguous-window filtering, genomic-region splits and reverse-complement duplicate filtering.
+- Reproducible 80/10/10 masking, validation-selected checkpoints, held-out test evaluation and a train-token-frequency baseline.
 
-Modern genomics models such as DNABERT are based on the Transformer architecture.
+This is a small educational model inspired by DNABERT-style pretraining. It is not the published DNABERT-2 architecture, checkpoint, training corpus or benchmark reproduction.
 
-Instead of treating DNA as plain text, these models learn contextual representations of nucleotide sequences that can later be fine-tuned for downstream tasks such as:
+## Run locally
 
-* Disease prediction
-* Promoter prediction
-* Enhancer prediction
-* Variant effect prediction
-* DNA sequence classification
-* Other genomics tasks
+Use Python 3.11 and a suitable CPU or CUDA PyTorch installation:
 
-This repository focuses on understanding **how these models are built**, not just how they are used.
-
----
-
-# 🚀 Features
-
-* DNA sequence preprocessing
-* DNA tokenization
-* Embedding layer
-* Multi-Head Self-Attention
-* ALiBi positional bias
-* Transformer Encoder Blocks
-* Feed Forward Network (FFN)
-* Layer Normalization
-* Residual Connections
-* Masked Language Modeling (MLM)
-* Complete training pipeline
-* PyTorch implementation
-
----
-
-# 🏗 Project Architecture
-
-```text
-Genome FASTA
-      │
-      ▼
-Dataset Preparation
-      │
-      ▼
-DNA Tokenization
-      │
-      ▼
-Input IDs
-      │
-      ▼
-Embedding Layer
-      │
-      ▼
-Transformer Encoder
-      │
-      ├── Multi-Head Self Attention
-      ├── ALiBi Bias
-      ├── LayerNorm
-      ├── Feed Forward Network
-      └── Residual Connections
-      │
-      ▼
-MLM Prediction Head
-      │
-      ▼
-Loss
-      │
-      ▼
-Backpropagation
-      │
-      ▼
-Updated Model
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python benchmark.py --output reports/smoke-benchmark.json
+python prepare_data.py --output data/ecoli.fna
+python train.py --fasta data/ecoli.fna --hidden 64 --heads 4 --layers 2 --vocab-size 256 --window 256 --batch-size 16 --epochs 3 --max-batches 64 --output outputs/ecoli-small
+python -m unittest discover -s tests -v
 ```
 
----
+The smoke benchmark generates random DNA and checks the training/evaluation path on CPU. The download command retrieves the original project's E. coli assembly, NCBI `GCF_000005845.2`, and records its URL and SHA-256. The final training command is a deliberately small experiment: at most 64 training batches per epoch. Remove `--max-batches` to process every training window. Use `--device cuda` when available.
 
-# 📂 Project Structure
+## Data and evaluation protocol
 
-```text
-Project
-│
-├── Dataset Preparation
-├── Tokenizer
-├── Configuration
-├── DNA Embedding
-├── MultiHeadSelfAttention
-├── Transformer Encoder Block
-├── DNABERT Model
-├── MLM Label Generator
-├── DataLoader
-└── Training Loop
-```
+Each FASTA record is divided into contiguous 70% / 15% / 15% regions, with a full-window gap before validation and test. Windows never cross region boundaries. Windows containing non-ACGT characters are excluded rather than joining sequence across ambiguous bases. Exact duplicate windows and reverse complements are removed across splits. BPE is fitted only on training windows.
 
----
+At least one eligible token per sequence is selected for prediction. Selected tokens are masked 80% of the time, replaced with a random non-special token 10%, and left visible 10%. Validation masking is fixed across epochs. The checkpoint with the lowest validation loss is evaluated once on the test regions.
 
-# 🧠 Model Components
+| Output | Contents |
+|---|---|
+| `metrics.json` | Masked-token loss, perplexity, accuracy, unigram baseline, configuration, seed and environment |
+| `split_manifest.json` | Record IDs and genomic coordinates for every retained window |
+| `tokenizer.json` | Training-only BPE vocabulary and configuration |
+| `model.pt` | Selected weights and architecture configuration |
 
-### 1. DNA Tokenizer
+## Evidence and interpretation
 
-Converts DNA sequences into numerical token IDs that can be processed by neural networks.
+[CI](https://github.com/Almizan-khan/-DNABERT-Style-Transformer-From-Scratch/actions) runs masking, splitting, padding-invariance and finite-gradient tests, plus a tiny synthetic training experiment. Synthetic results establish execution, not biological usefulness. The separate genome experiment records results on the downloaded assembly.
 
----
+Perplexity depends on the tokenizer and masking protocol and should not be compared across different tokenizations as if it were one shared scale. A unigram baseline can be difficult to beat in a small run. The original notebook's partial training output is retained as historical material, not a completed evaluation.
 
-### 2. Embedding Layer
+## Research limits and next experiment
 
-Maps every DNA token into a dense vector representation.
+Contiguous regions and duplicate filtering reduce obvious leakage but do not eliminate homologous sequence similarity. A stronger follow-up should use sequence-cluster or species holdouts, multiple seeds and a downstream task with explicit labels. Compare k-mer and BPE tokenization under a fixed parameter/training budget before increasing model size. MLM loss alone does not establish variant-effect prediction, regulatory-function prediction or clinical value.
 
----
+The original notebook and architecture asset remain in the repository. See [validation](VALIDATION.md) and [original description](docs/original-readme.md).
 
-### 3. Multi-Head Self-Attention
+## References
 
-Allows every DNA token to attend to other relevant positions within the sequence, enabling the model to learn long-range biological dependencies.
-
----
-
-### 4. ALiBi Positional Bias
-
-Uses Attention with Linear Biases (ALiBi) to encode positional information without traditional positional embeddings.
-
----
-
-### 5. Transformer Encoder Block
-
-Each encoder block contains:
-
-* Multi-Head Attention
-* Residual Connection
-* Layer Normalization
-* Feed Forward Network
-* Residual Connection
-
----
-
-### 6. MLM Head
-
-Predicts randomly masked DNA tokens during pretraining.
-
-This enables the model to learn contextual representations of genomic sequences.
-
----
-
-# 🧬 Training Objective
-
-This project uses **Masked Language Modeling (MLM)**.
-
-Example:
-
-Input
-
-```text
-A C [MASK] T G
-```
-
-Target
-
-```text
-A C G T G
-```
-
-The model learns by predicting the masked nucleotide using its surrounding context.
-
----
-
-# 🛠 Technologies Used
-
-* Python
-* PyTorch
-* Transformers
-* NumPy
-* Biopython
-* Google Colab
-
----
-
-# 📚 Learning Outcomes
-
-Through this project I gained hands-on understanding of:
-
-* DNA sequence preprocessing
-* Tokenization
-* Embedding layers
-* Self-Attention
-* Multi-Head Attention
-* ALiBi positional encoding
-* Transformer encoder architecture
-* Feed Forward Networks
-* Layer Normalization
-* Residual Connections
-* Masked Language Modeling
-* Backpropagation and training workflow
-
----
-
-# 🔮 Future Work
-
-Planned improvements include:
-
-* Fine-tuning for disease prediction
-* Promoter prediction
-* Enhancer prediction
-* DNABERT-2 implementation
-* HyenaDNA implementation
-* Model benchmarking
-* Architecture improvements
-
----
-
-# 📌 Disclaimer
-
-This repository is an **educational implementation** created to understand the internal workings of DNABERT-style Transformer models.
-
-It is **not an official implementation of DNABERT or DNABERT-2**, and it is not intended to reproduce the exact training procedures or pretrained weights from the original research papers.
-
-AI-assisted tools were used during development for learning, debugging, and code exploration. The implementation has been studied and documented as part of my learning process.
-
----
-
-# 📖 References
-
-* DNABERT: Pre-trained Bidirectional Encoder Representations from Transformers for DNA-Language in Genome
-* DNABERT-2
-* Attention Is All You Need
-* ALiBi: Train Short, Test Long
-
----
-
-# ⭐ Acknowledgements
-
-Thanks to the open-source research community for publishing foundational work on Transformer architectures and genomic language models that inspired this educational implementation.
-
+- [DNABERT-2 implementation and GUE evaluation](https://github.com/MAGICS-LAB/DNABERT_2)
+- [ALiBi](https://arxiv.org/abs/2108.12409)
+- [NCBI assembly source](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/)
