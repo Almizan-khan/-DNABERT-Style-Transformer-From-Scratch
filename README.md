@@ -48,6 +48,22 @@ At least one eligible token per sequence is selected for prediction. Selected to
 
 Perplexity depends on the tokenizer and masking protocol and should not be compared across different tokenizations as if it were one shared scale. A unigram baseline can be difficult to beat in a small run. The original notebook's partial training output is retained as historical material, not a completed evaluation.
 
+## Measured E. coli experiment
+
+![Measured experiment results](reports/results.svg)
+
+| Held-out test metric | Result |
+|---|---:|
+| Transformer masked-token loss | **4.8491** |
+| Train-token-frequency baseline loss | 4.9527 |
+| Masked-token accuracy | 7.18% |
+| Evaluated targets / genomic windows | 30,642 / 2,718 |
+| Parameters | 137,408 |
+
+[Raw metrics and data hash](reports/ecoli-small.json) · [Executed genome run](https://github.com/Almizan-khan/-DNABERT-Style-Transformer-From-Scratch/actions/runs/42401778845)
+
+This single-seed run used three epochs capped at 64 batches of 16 windows per epoch, with a 256-token BPE vocabulary. The small loss improvement over the frequency baseline is modest evidence of learning under this protocol, not a claim of biological discovery or downstream predictive utility. The archive includes the tokenizer, genomic split manifest and selected checkpoint while the workflow artifact remains available.
+
 ## Research limits and next experiment
 
 Contiguous regions and duplicate filtering reduce obvious leakage but do not eliminate homologous sequence similarity. A stronger follow-up should use sequence-cluster or species holdouts, multiple seeds and a downstream task with explicit labels. Compare k-mer and BPE tokenization under a fixed parameter/training budget before increasing model size. MLM loss alone does not establish variant-effect prediction, regulatory-function prediction or clinical value.

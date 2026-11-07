@@ -1,0 +1,97 @@
+{
+  "provenance": {
+    "repository": "Almizan-khan/-DNABERT-Style-Transformer-From-Scratch",
+    "commit": "4be733689c0cc292164281204c1770f17fb68fb5",
+    "workflow_run": "https://github.com/Almizan-khan/-DNABERT-Style-Transformer-From-Scratch/actions/runs/42401778845",
+    "job_id": 128490923828,
+    "date": "2026-11-07",
+    "source": "Executed GitHub Actions job log"
+  },
+  "tests": null,
+  "result": {
+    "task": "DNA BPE masked-language modeling",
+    "data_file": "data/ecoli.fna",
+    "data_sha256": "53bb6a51b6e92139ced1e38f74b7938781027c52200922ff03718c2237d23bb4",
+    "split": "70/15/15 contiguous genomic regions per record, one-window gaps, exact/reverse-complement duplicates removed",
+    "examples": {
+      "train": 12692,
+      "validation": 2718,
+      "test": 2718
+    },
+    "excluded_windows": 0,
+    "config": {
+      "v": 256,
+      "h": 64,
+      "heads": 4,
+      "inter": 256,
+      "layers": 2,
+      "drop": 0.1
+    },
+    "training": {
+      "epochs": 3,
+      "batch_size": 16,
+      "learning_rate": 0.0005,
+      "seed": 42,
+      "window": 256,
+      "max_batches": 64
+    },
+    "initial_validation": {
+      "masked_token_loss": 5.765723348711727,
+      "perplexity": 319.16983164276644,
+      "masked_token_accuracy": 0.0019932686337940726,
+      "masked_tokens": 30603,
+      "unigram_baseline_loss": 4.948831222729134
+    },
+    "history": [
+      {
+        "epoch": 1,
+        "train_loss": 5.267112953276107,
+        "validation": {
+          "masked_token_loss": 4.99876947038038,
+          "perplexity": 148.23064463212083,
+          "masked_token_accuracy": 0.046139267392085744,
+          "masked_tokens": 30603,
+          "unigram_baseline_loss": 4.948831222729134
+        }
+      },
+      {
+        "epoch": 2,
+        "train_loss": 4.942499132248818,
+        "validation": {
+          "masked_token_loss": 4.880631131876241,
+          "perplexity": 131.71376641526845,
+          "masked_token_accuracy": 0.06460150965591609,
+          "masked_tokens": 30603,
+          "unigram_baseline_loss": 4.948831222729134
+        }
+      },
+      {
+        "epoch": 3,
+        "train_loss": 4.883584608593894,
+        "validation": {
+          "masked_token_loss": 4.844640752690581,
+          "perplexity": 127.05762868256794,
+          "masked_token_accuracy": 0.07433911708002483,
+          "masked_tokens": 30603,
+          "unigram_baseline_loss": 4.948831222729134
+        }
+      }
+    ],
+    "test": {
+      "masked_token_loss": 4.84912214745399,
+      "perplexity": 127.62830182514959,
+      "masked_token_accuracy": 0.07176424515371059,
+      "masked_tokens": 30642,
+      "unigram_baseline_loss": 4.9526956405226334
+    },
+    "training_seconds": 9.755375115999996,
+    "parameters": 137408,
+    "limitations": "Exact-match filtering does not remove all homologous regions. MLM metrics do not establish downstream biological utility.",
+    "environment": {
+      "torch": "2.6.0+cpu",
+      "python": "3.11.18",
+      "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+      "device": "cpu"
+    }
+  }
+}
